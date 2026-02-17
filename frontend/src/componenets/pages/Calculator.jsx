@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-
+import { Fragment } from "react";
 const Calculator = ()=>{
     const [getMatrices, setMatrices] = useState([]);
 
@@ -7,19 +7,25 @@ const Calculator = ()=>{
         const apiUrl = `${import.meta.env.VITE_API_URL}/matrices`;
 
         (async ()=>{
+            const apiUrl = `${import.meta.env.VITE_API_URL}/matrices`;
+
             const matrices = await fetch(apiUrl, {mode: "cors"})
             const data = await matrices.json()
-            //console.log(data)
             setMatrices(data)
-            // data.map((x)=>{
-            //     console.log(x[1])
-            // })
         })();
         
 
     }, [])
 
-    const createMatrix = (e)=>{
+    const reloadMatrices = async ()=>{
+        const apiUrl = `${import.meta.env.VITE_API_URL}/matrices`;
+
+        const matrices = await fetch(apiUrl, {mode: "cors"})
+        const data = await matrices.json()
+        setMatrices(data)
+    }
+
+    const createMatrix = async (e)=>{
         e.preventDefault()
         let rows = e.target.rows.value
         let cols = e.target.cols.value
@@ -31,13 +37,35 @@ const Calculator = ()=>{
                 matrix[i].push(0)
             }
         }
-        if(getMatrices == undefined) {
-            //setMatrices([matrix])
-        } else {
-            //setMatrices([...getMatrices, matrix])
-        }
+
+         const res = await fetch(`${import.meta.env.VITE_API_URL}/matrix`, {
+            method: "POST",
+            mode: "cors",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                elements: matrix
+            }) 
+        })
+
+        const data = await res.json()
+
+        reloadMatrices()
     }
     
+    const deleteMatrix = async (e, matrixId)=>{
+        e.preventDefault();
+        
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/matrix/${matrixId}`, {
+            mode: "cors",
+            method: "DELETE"
+        })
+
+        const data = await res.json()
+        reloadMatrices()
+
+    }
     return (
         <>
             <h2>Add Matrix</h2>
@@ -49,19 +77,22 @@ const Calculator = ()=>{
                 <button>Add</button>
             </form>
 
-                {getMatrices.map((matrix)=>(
-                    <table key={matrix[0]}>
-                    <tbody>
-                        {matrix[1].map((row)=>(
-                            <tr key={`${matrix[0]}-r${row}`}>
-                                {row.map((col)=>(
-                                    <td key={`${matrix[0]}-r${row}-${col}`}>{col}</td>
-                                ))}
-                            </tr>
-                        ))}
-                    </tbody>
-                    </table>
-                ))}    
+            {getMatrices.map((matrix)=>(
+                <Fragment key={matrix[0]}>
+                <table key={matrix[0]}>
+                <tbody key={`${matrix[0]}-body`}>
+                    {matrix[1].map((row, i)=>(
+                        <tr key={`${matrix[0]}-${i}`}>
+                            {row.map((col, j)=>(
+                                <td key={`${matrix[0]}-${i}-${j}`}>{col}</td>
+                            ))}
+                        </tr>
+                    ))}
+                </tbody>
+                </table>
+                <button onClick={(e)=>{deleteMatrix(e,matrix[0])}} key={`${matrix[0]}-btn`}>X</button>
+                </ Fragment>
+            ))}    
         </>
     )
 }

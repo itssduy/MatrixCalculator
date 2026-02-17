@@ -52,6 +52,7 @@ async def create_matrix(matrix: Matrix):
     with psycopg.connect(connectionString) as conn: 
         with conn.cursor() as cur:
             record = cur.execute("INSERT INTO matrix (id, elements) VALUES (%s, %s) RETURNING *", (matrix_id, matrix.elements)).fetchone()
+            conn.commit()
             return record
 
 @app.put("/matrix/{matrix_id}")
@@ -59,11 +60,13 @@ async def update_matrix(matrix_id: str, matrix: Matrix):
     with psycopg.connect(connectionString) as conn:
         with conn.cursor() as cur:
             record = cur.execute("UPDATE matrix SET elements=%s WHERE id=%s RETURNING *", (matrix.elements, matrix_id)).fetchone()
+            conn.commit()
             return record
         
 @app.delete("/matrix/{matrix_id}")
 async def delete_matrix(matrix_id: str):
     with psycopg.connect(connectionString) as conn:
         with conn.cursor() as cur:
-            record = cur.execute("DELETE * FROM matrix WHERE id=%s", (matrix_id))
-            return record
+            cur.execute("DELETE FROM matrix WHERE id=%s", (matrix_id,))
+            conn.commit()
+            return {"msg": "good"}
