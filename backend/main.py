@@ -4,6 +4,7 @@ import psycopg
 from uuid import UUID, uuid4
 import os
 from dotenv import load_dotenv
+from fastapi.middleware.cors import CORSMiddleware
 
 load_dotenv()
 
@@ -16,6 +17,18 @@ class Matrix(BaseModel):
     elements: list[list[int]]
 
 app = FastAPI()
+
+origins = [
+    "http://localhost:5173",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 connectionString = f"postgresql://{db_user}:{db_pass}@localhost:{db_port}/{db_name}"
 
@@ -46,4 +59,11 @@ async def update_matrix(matrix_id: str, matrix: Matrix):
     with psycopg.connect(connectionString) as conn:
         with conn.cursor() as cur:
             record = cur.execute("UPDATE matrix SET elements=%s WHERE id=%s RETURNING *", (matrix.elements, matrix_id)).fetchone()
+            return record
+        
+@app.delete("/matrix/{matrix_id}")
+async def delete_matrix(matrix_id: str):
+    with psycopg.connect(connectionString) as conn:
+        with conn.cursor() as cur:
+            record = cur.execute("DELETE * FROM matrix WHERE id=%s", (matrix_id))
             return record
