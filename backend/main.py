@@ -5,6 +5,7 @@ from uuid import UUID, uuid4
 import os
 from dotenv import load_dotenv
 from fastapi.middleware.cors import CORSMiddleware
+from datetime import datetime
 
 load_dotenv()
 
@@ -36,7 +37,7 @@ connectionString = f"postgresql://{db_user}:{db_pass}@localhost:{db_port}/{db_na
 async def read_matrices():
     with psycopg.connect(connectionString) as conn: 
         with conn.cursor() as cur:
-            records = cur.execute("SELECT * FROM matrix").fetchall()
+            records = cur.execute("SELECT * FROM matrix ORDER BY created_at ASC").fetchall()           
             return records
 
 @app.get("/matrices/{matrix_id}")
@@ -51,7 +52,7 @@ async def create_matrix(matrix: Matrix):
     matrix_id = uuid4()
     with psycopg.connect(connectionString) as conn: 
         with conn.cursor() as cur:
-            record = cur.execute("INSERT INTO matrix (id, elements) VALUES (%s, %s) RETURNING *", (matrix_id, matrix.elements)).fetchone()
+            record = cur.execute("INSERT INTO matrix (id, elements, created_at) VALUES (%s, %s, %s) RETURNING *", (matrix_id, matrix.elements, datetime.now())).fetchone()            
             conn.commit()
             return record
 
